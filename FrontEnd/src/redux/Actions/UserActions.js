@@ -7,6 +7,13 @@ const {
   USER_REGISTER_REQUEST,
   USER_REGISTER_SUCCESS,
   USER_REGISTER_FAIL,
+  USER_DETAILS_REQUEST,
+  USER_DETAILS_SUCCESS,
+  USER_DETAILS_FAIL,
+  USER_DETAILS_RESET,
+  USER_UPDATE_PROFILE_REQUEST,
+  USER_UPDATE_PROFILE_SUCCESS,
+  USER_UPDATE_PROFILE_FAIL,
 } = require("redux/Constants/UserConstants");
 
 const login = (email, password) => async (dispatch) => {
@@ -43,6 +50,7 @@ const login = (email, password) => async (dispatch) => {
 const logout = () => async (dispatch) => {
   localStorage.removeItem("USER_INFO");
   dispatch({ type: USER_LOGOUT });
+  dispatch({ type: USER_DETAILS_RESET});
   document.location.href = "/login";
 };
 
@@ -58,7 +66,7 @@ const register = (name, email, password) => async (dispatch) => {
     };
     const { data } = await axios.post(
       "/api/users",
-      {name, email, password },
+      { name, email, password },
       config
     );
     dispatch({
@@ -79,6 +87,76 @@ const register = (name, email, password) => async (dispatch) => {
           : error.message,
     });
   }
+};
+
+const getUserDetails = (id) => async (dispatch, getState) => {
+  try {
+    dispatch({
+      type: USER_DETAILS_REQUEST,
+    });
+    const {
+      userLogin: { userInfo },
+    } = getState();
+    const config = {
+      headers: {
+        Authorization: `Bearer ${userInfo.token}`,
+      },
+    };
+    const { data } = await axios.get(`/api/users/${id}`, config);
+    dispatch({
+      type: USER_DETAILS_SUCCESS,
+      payload: data,
+    });
+  } catch (error) {
+    const message =
+      error.response && error.response.data.message
+        ? error.response.data.message
+        : error.message;
+
+    if ((message === "Not Authorized, Token Failed")) {
+      dispatch(logout());
+    }
+    dispatch({
+      type: USER_DETAILS_FAIL,
+      payload: message,
+    });
+  }
+};
+
+const updateProfile = (user) => async (dispatch, getState) => {
+  try {
+    dispatch({
+      type: USER_UPDATE_PROFILE_REQUEST,
+    });
+    const {
+      userLogin: { userInfo },
+    } = getState();
+    const config = {
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${userInfo.token}`,
+      },
+    };
+    const { data } = await axios.put(`/api/users/profile`,user, config);
+    dispatch({
+      type: USER_UPDATE_PROFILE_SUCCESS,
+      payload: data,
+    });
+    localStorage.setItem("USER_INFO", JSON.stringify(data))
+  } catch (error) {
+    const message =
+      error.response && error.response.data.message
+        ? error.response.data.message
+        : error.message;
+
+    if ((message === "Not Authorized, Token Failed")) {
+      dispatch(logout());
+    }
+    dispatch({
+      type: USER_UPDATE_PROFILE_FAIL,
+      payload: message,
+    });
+  }
 }
 
-export { login, logout, register };
+export { login, logout, register, getUserDetails, updateProfile };

@@ -1,4 +1,4 @@
-import axios from "axios";
+
 import Loader from "components/Loader";
 import Meta from "components/Meta";
 import Rating from "components/Rating";
